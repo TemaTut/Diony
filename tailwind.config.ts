@@ -49,7 +49,20 @@ const config: Config = {
         card: "1rem",
         shell: "1.125rem",
       },
+      backdropBlur: {
+        glass: "2px",
+      },
+      backgroundImage: {
+        "glass-sheen": "linear-gradient(115deg, rgb(255 255 255 / 0.18) 0%, rgb(255 255 255 / 0.025) 24%, transparent 45%, transparent 65%, rgb(255 255 255 / 0.08) 100%)",
+        "glass-highlight": "linear-gradient(90deg, transparent, rgb(255 255 255 / 0.85), rgb(255 255 255 / 0.2), transparent)",
+      },
+      dropShadow: {
+        "glass-label": "0 1px 2px rgb(0 0 0 / 0.85)",
+      },
       boxShadow: {
+        "glass-nav": "0 12px 36px rgb(0 0 0 / 0.3), 0 2px 8px rgb(0 0 0 / 0.15)",
+        "glass-edge": "inset 0 1px 1px rgb(255 255 255 / 0.85), inset 1px 0 2px rgb(255 255 255 / 0.4), inset -1px 0 2px rgb(255 255 255 / 0.15), inset 0 -2px 3px rgb(255 255 255 / 0.3)",
+        "glass-active": "inset 0 1px 1px rgb(255 255 255 / 0.45), inset 0 -1px 2px rgb(255 255 255 / 0.1), 0 2px 8px rgb(0 0 0 / 0.12)",
         glass: "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 2px 2px rgba(255, 255, 255, 0.45), inset 1px 0 1px rgba(255, 255, 255, 0.2), inset 0 -2px 3px rgba(255, 255, 255, 0.16)",
       },
       keyframes: {
