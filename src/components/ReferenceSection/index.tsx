@@ -45,7 +45,7 @@ export default function ReferenceSection({ section, media = "photo" }: { section
   };
 
   return (
-    <section aria-labelledby={`${section.id}-title`} className="space-y-3">
+    <section aria-labelledby={`${section.id}-title`} className="flex flex-col gap-3">
       <SectionHeading id={`${section.id}-title`} title={section.title} description={section.description}>
         <div className="flex shrink-0 gap-2">
           <IconButton

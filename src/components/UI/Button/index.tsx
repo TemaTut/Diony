@@ -28,7 +28,7 @@ export default function Button({
       type={type}
       disabled={disabled || isLoading}
       className={cn(
-        "inline-flex min-h-11 items-center justify-center gap-2 px-4 py-2 text-center text-small transition disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex min-h-8 items-center justify-center gap-2 px-4 py-2 text-center text-small transition disabled:cursor-not-allowed disabled:opacity-50",
         rounded ? "rounded-full" : "rounded-card",
         variantClasses[variant],
         className,

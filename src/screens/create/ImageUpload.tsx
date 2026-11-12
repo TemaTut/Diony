@@ -64,7 +64,7 @@ export default function ImageUpload({ initialImages = [] }: { initialImages?: Up
   }
 
   return (
-    <Paper className="space-y-4 border-0 p-5 sm:p-6">
+    <Paper className="flex flex-col gap-4 border-0 p-5 sm:p-6">
       <SectionHeading title="Изображения"><span className="text-base text-muted">{images.length} / {MAX_IMAGES}</span></SectionHeading>
       <p className="text-lead">Выберите фото</p>
       {images.length > 0 && <div className="grid grid-cols-4 gap-2">{images.map((image, index) => <div key={`${image.url}-${index}`} className="relative aspect-square overflow-hidden rounded-card bg-surface-raised">

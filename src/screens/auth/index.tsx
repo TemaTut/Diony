@@ -47,7 +47,7 @@ export default function AuthScreen() {
   return (
     <main className="flex min-h-dvh items-center justify-center px-4 text-foreground">
       {state === "error" ? (
-        <Paper className="max-w-sm space-y-3 p-6">
+        <Paper className="max-w-sm flex flex-col gap-3 p-6">
           <SectionHeading as="h1" title="Не удалось войти" description="Перезапустите приложение в Telegram." />
         </Paper>
       ) : (

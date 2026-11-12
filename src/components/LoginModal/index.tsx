@@ -42,7 +42,7 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
       <section ref={dialogRef} className="relative w-full max-w-[420px] rounded-shell border border-line bg-surface p-6 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="login-title">
         <IconButton className="absolute right-4 top-4" type="button" onClick={onClose} aria-label="Закрыть"><X size={19} /></IconButton>
         {submitted ? (
-          <div className="space-y-4 pr-8" role="status">
+          <div className="flex flex-col gap-4 pr-8" role="status">
             <span className="grid size-11 place-items-center rounded-full bg-white/10 text-h2">P</span>
             <h2 id="login-title" className="text-h2">Скоро будем на связи</h2>
             <p className="text-base text-muted">Вход по адресу {email} появится после подключения авторизации.</p>
@@ -50,12 +50,12 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
           </div>
         ) : (
           <>
-            <div className="space-y-4 pr-8">
+            <div className="flex flex-col gap-4 pr-8">
               <span className="grid size-11 place-items-center rounded-full bg-white/10 text-h2">P</span>
               <h2 id="login-title" className="text-h2">Войдите в Diony</h2>
               <p className="text-base text-muted">Сохраняйте работы и возвращайтесь к своим идеям.</p>
             </div>
-            <form className="mt-6 space-y-3" onSubmit={submit}>
+            <form className="mt-6 flex flex-col gap-3" onSubmit={submit}>
               <label className="block text-small text-muted" htmlFor="login-email">Электронная почта</label>
               <Input
                 id="login-email"

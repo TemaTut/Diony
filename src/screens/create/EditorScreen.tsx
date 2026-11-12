@@ -45,7 +45,7 @@ export default function EditorScreen({
     const closePrompt = useCallback(() => setExpanded(false), []);
 
     return (
-        <section className="mx-auto w-full max-w-2xl space-y-6 py-4">
+        <section className="mx-auto w-full max-w-2xl flex flex-col gap-6 py-4">
             <header className="flex items-center gap-3">
                 <ButtonLink href="/create" aria-label="Назад к выбору" className="shrink-0 px-2">
                     <ArrowLeft size={24} />
@@ -63,7 +63,7 @@ export default function EditorScreen({
                     <p className="mt-1 text-lead">{reference.title}</p>
                 </Paper>
             )}
-            <div className="space-y-3">
+            <div className="flex flex-col gap-3">
                 <label htmlFor="generation-model" className="block text-base text-muted">
                     Нейросеть
                 </label>
@@ -85,12 +85,12 @@ export default function EditorScreen({
                 </p>
             )}
             <ImageUpload initialImages={reference?.images} />
-            <div className="space-y-3">
+            <div className="flex flex-col gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <label htmlFor="generation-prompt" className="text-lead">
                         Промпт <span className="text-danger">*</span>
                     </label>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                         <Toggle
                             label="Редактируемый промпт"
                             checked={editable}
@@ -145,7 +145,7 @@ export default function EditorScreen({
                     <ChevronDown size={20} />
                 </span>
             </Button>
-            <div className="space-y-3">
+            <div className="flex flex-col gap-3">
                 <Button disabled className="w-full" iconLeft={<Sparkles size={18} />}>
                     Сгенерировать {media === "photo" ? "изображение" : "видео"}
                 </Button>
