@@ -26,3 +26,20 @@ pnpm-debug.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# AI agent instructions and local configuration
+AGENTS.md
+AGENTS.override.md
+RULES.md
+rules.md
+SKILL.md
+CLAUDE.md
+GEMINI.md
+.agents/
+.codex/
+.claude/
+.cursor/
+.cursorrules
+.windsurfrules
+.github/copilot-instructions.md
+.github/instructions/
