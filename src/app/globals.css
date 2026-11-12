@@ -5,6 +5,30 @@
 @layer base {
   html {
     @apply scroll-smooth;
+    color-scheme: dark;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: theme("colors.quiet") transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-quiet;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted;
   }
 
   body {

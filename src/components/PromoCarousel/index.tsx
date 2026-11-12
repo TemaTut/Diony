@@ -8,7 +8,7 @@ const slides = [
     {
         title: "Образ, который начинается с идеи",
         copy: "Подберите визуальное направление и создайте свой вариант.",
-        image: "/images/Diony-hero.png",
+        image: "/images/diony-hero.png",
         position: "center 44%",
     },
     {
@@ -20,7 +20,7 @@ const slides = [
     {
         title: "От первого кадра до целой истории",
         copy: "Соберите настроение, детали и композицию в одном референсе.",
-        image: "/images/Diony-hero.png",
+        image: "/images/diony-hero.png",
         position: "72% 58%",
     },
 ];

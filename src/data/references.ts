@@ -16,7 +16,7 @@ export type ReferenceSection = {
 };
 
 const sprite = "/images/model-catalog-sprite.png";
-const hero = "/images/Diony-hero.png";
+const hero = "/images/diony-hero.png";
 
 const prompts: Record<string, string[]> = {
   popular: [
