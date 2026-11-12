@@ -1,5 +1,18 @@
 import type { Config } from "tailwindcss";
 
+export const colors = {
+  background: "#0f0f0f",
+  surface: "#1b1b1b",
+  "surface-raised": "#242424",
+  line: "#292929",
+  foreground: "#f5f5f5",
+  muted: "#929292",
+  quiet: "#686868",
+  accent: "#ffffff",
+  success: "#22c55e",
+  danger: "#f87171",
+} as const;
+
 const config: Config = {
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
@@ -11,18 +24,7 @@ const config: Config = {
       "2xl": "1536px",
     },
     extend: {
-      colors: {
-        background: "#0f0f0f",
-        surface: "#1b1b1b",
-        "surface-raised": "#242424",
-        line: "#292929",
-        foreground: "#f5f5f5",
-        muted: "#929292",
-        quiet: "#686868",
-        accent: "#ffffff",
-        success: "#22c55e",
-        danger: "#f87171",
-      },
+      colors,
       fontFamily: {
         sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
       },

@@ -43,3 +43,6 @@ GEMINI.md
 .windsurfrules
 .github/copilot-instructions.md
 .github/instructions/
+
+# Reference project used for source migration
+/example/
