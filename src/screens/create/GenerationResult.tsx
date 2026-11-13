@@ -10,7 +10,6 @@ import Loader from "@/components/UI/Loader";
 import Paper from "@/components/UI/Paper";
 import SectionHeading from "@/components/UI/SectionHeading";
 import Skeleton from "@/components/UI/Skeleton";
-import { Telegram } from "@/lib/telegram";
 
 export default function GenerationResult({ id, query }: { id: string; query: ReturnType<typeof useGenerationResult> }) {
   const { data, isError, error, isFetching, refetch } = query;
@@ -25,15 +24,6 @@ export default function GenerationResult({ id, query }: { id: string; query: Ret
     setSaveMessage(null);
     setSharing(true);
     try {
-      if (Telegram.downloadFile.isAvailable()) {
-        const file = photo.data ?? (await photo.refetch()).data;
-        if (!file) throw new Error("Не удалось подготовить фото для сохранения. Повторите попытку.");
-        const url = new URL("/api/generations/download", window.location.origin);
-        url.searchParams.set("url", data.result_url);
-        await Telegram.downloadFile(url.href, file.name, { timeout: 60_000 });
-        setSaveMessage("Запрос на сохранение передан Telegram. Завершите сохранение в системном меню телефона.");
-        return;
-      }
       // Web Share must run during the click, with the image already prepared.
       if (photo.data && navigator.share && navigator.canShare?.({ files: [photo.data] })) {
         await navigator.share({ files: [photo.data] });
@@ -46,11 +36,11 @@ export default function GenerationResult({ id, query }: { id: string; query: Ret
           : "Не удалось подготовить фото для сохранения. Повторите попытку.");
         return;
       }
-      setSaveMessage("В этой версии приложения системное сохранение фото недоступно. Нажмите и удерживайте изображение и выберите «Сохранить изображение», если этот пункт доступен.");
+      setSaveMessage("Этот встроенный браузер не поддерживает системное меню для сохранения фото. Нажмите и удерживайте изображение: если доступен пункт «Сохранить изображение», выберите его.");
     } catch (error) {
       setSaveMessage(error instanceof DOMException && error.name === "AbortError"
         ? "Сохранение отменено."
-        : "Не удалось открыть сохранение фото. Повторите попытку. Если Telegram не показывает меню, обновите приложение.");
+        : `Не удалось открыть системное меню фото: ${error instanceof Error ? `${error.name}: ${error.message}` : "неизвестная ошибка"}`);
     } finally {
       setSharing(false);
     }
@@ -72,7 +62,7 @@ export default function GenerationResult({ id, query }: { id: string; query: Ret
       {completed && data.result_url && <>
         <ImagePreview src={data.result_url} alt="Результат генерации" onLoad={() => setFailedImage(null)} onError={() => setFailedImage(data.result_url)} />
         {failedImage === data.result_url && <p role="alert" className="text-base text-danger">Не удалось показать изображение. Попробуйте нажать «Сохранить фото».</p>}
-        <Button isLoading={sharing} onClick={() => void savePhoto()}>Сохранить фото</Button>
+        <Button isLoading={sharing || (!photo.data && photo.isFetching)} onClick={() => void savePhoto()}>Сохранить фото</Button>
         {saveMessage && <p role="status" className="text-base text-muted">{saveMessage}</p>}
       </>}
     </Paper>
