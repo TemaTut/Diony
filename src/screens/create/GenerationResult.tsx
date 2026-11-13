@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { useGenerationResult } from "@/api/generations/hooks";
 import { generationErrorMessage } from "@/api/generations/generations";
 import Button from "@/components/UI/Button";
@@ -11,7 +13,8 @@ import Skeleton from "@/components/UI/Skeleton";
 
 export default function GenerationResult({ id, query }: { id: string; query: ReturnType<typeof useGenerationResult> }) {
   const { data, isError, error, isFetching, refetch } = query;
-  const pending = !isError && (!data || data.status === "pending");
+  const [failedImage, setFailedImage] = useState<string | null>(null);
+  const pending = !isError && (!data || ["pending", "processing"].includes(data.status));
   const completed = data?.status === "completed";
 
   return (
@@ -31,8 +34,9 @@ export default function GenerationResult({ id, query }: { id: string; query: Ret
         <div className="aspect-square w-full overflow-hidden rounded-card bg-surface-raised">
           {/* Backend result URLs can belong to different image storage providers. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={data.result_url} alt="Результат генерации" className="size-full object-contain" />
+          <img referrerPolicy="no-referrer" onError={() => setFailedImage(data.result_url)} src={data.result_url} alt="Результат генерации" className="size-full object-contain" />
         </div>
+        {failedImage === data.result_url && <p role="alert" className="text-base text-danger">Не удалось загрузить изображение из хранилища. Попробуйте открыть оригинал.</p>}
         <ButtonLink href={data.result_url} target="_blank" rel="noopener noreferrer">Открыть оригинал</ButtonLink>
       </>}
     </Paper>

@@ -15,7 +15,7 @@ export function useGenerationResult(id: string | null) {
     enabled: Boolean(id),
     refetchInterval: (query) => {
       if (query.state.status === "error") return false;
-      return !query.state.data || query.state.data.status === "pending" ? 2000 : false;
+      return !query.state.data || ["pending", "processing"].includes(query.state.data.status) ? 5000 : false;
     },
     refetchOnWindowFocus: false,
     retry: 2,

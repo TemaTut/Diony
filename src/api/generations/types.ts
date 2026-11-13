@@ -1,4 +1,4 @@
-export type GenerationStatus = "pending" | "completed" | "failed";
+export type GenerationStatus = "pending" | "processing" | "completed" | "failed";
 
 export type GenerationImage = {
   url: string;

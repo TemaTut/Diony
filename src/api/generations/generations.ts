@@ -11,7 +11,7 @@ import {
 } from "@/api/generations/types";
 
 function checkStatus(status: unknown): asserts status is GenerationStatus {
-    if (!["pending", "completed", "failed"].includes(String(status))) {
+    if (!["pending", "processing", "completed", "failed"].includes(String(status))) {
         throw new Error("Сервер вернул неизвестный статус генерации.");
     }
 }

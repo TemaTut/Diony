@@ -46,7 +46,7 @@ export default function EditorScreen({
   const create = useCreateGeneration();
   const result = useGenerationResult(generationId);
   const lastAttempt = useRef<{ fingerprint: string; key: string } | null>(null);
-  const busy = create.isPending || Boolean(generationId && (result.isPending || result.data?.status === "pending"));
+  const busy = create.isPending || Boolean(generationId && (result.isPending || result.data?.status === "pending" || result.data?.status === "processing"));
 
   const [model, setModel] = useState(models[0].value);
   const [editable, setEditable] = useState(false);

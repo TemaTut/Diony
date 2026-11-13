@@ -58,7 +58,10 @@ export function getAccessToken() {
 }
 
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL + "api/v1",
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  headers: {
+    "ngrok-skip-browser-warning": "true",
+  },
 });
 
 apiClient.interceptors.request.use((config) => {
