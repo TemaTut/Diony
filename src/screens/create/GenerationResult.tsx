@@ -36,8 +36,8 @@ export default function GenerationResult({ id, query }: { id: string; query: Ret
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img referrerPolicy="no-referrer" onError={() => setFailedImage(data.result_url)} src={data.result_url} alt="Результат генерации" className="size-full object-contain" />
         </div>
-        {failedImage === data.result_url && <p role="alert" className="text-base text-danger">Не удалось загрузить изображение из хранилища. Попробуйте открыть оригинал.</p>}
-        <ButtonLink href={data.result_url} target="_blank" rel="noopener noreferrer">Открыть оригинал</ButtonLink>
+        {failedImage === data.result_url && <p role="alert" className="text-base text-danger">Не удалось загрузить изображение из хранилища. Попробуйте скачать файл.</p>}
+        <ButtonLink href={`/api/generations/download?url=${encodeURIComponent(data.result_url)}`} download="diony-generation.jpg" prefetch={false}>Скачать</ButtonLink>
       </>}
     </Paper>
   );
