@@ -75,6 +75,24 @@ export async function getGeneration(id: string, signal?: AbortSignal): Promise<G
     return { status: data.status, result_url: resultUrl };
 }
 
+export async function getGenerationPhoto(url: string, signal?: AbortSignal): Promise<File> {
+  const { data } = await axios.get<Blob>("/api/generations/download", {
+    params: { url },
+    responseType: "blob",
+    signal,
+  });
+  const extensions: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+    "image/avif": "avif",
+  };
+  const extension = extensions[data.type];
+  if (!extension) throw new Error("Не удалось подготовить фото для сохранения.");
+  return new File([data], `diony-generation.${extension}`, { type: data.type });
+}
+
 export function generationErrorMessage(error: unknown): string {
     if (axios.isAxiosError(error)) {
         const detail: unknown = error.response?.data?.detail;

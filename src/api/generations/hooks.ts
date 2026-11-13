@@ -2,7 +2,18 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 
-import { createGeneration, getGeneration } from "@/api/generations/generations";
+import { createGeneration, getGeneration, getGenerationPhoto } from "@/api/generations/generations";
+
+export function useGenerationPhoto(url: string | null) {
+  return useQuery({
+    queryKey: ["generation-photo", url],
+    queryFn: ({ signal }) => getGenerationPhoto(url!, signal),
+    enabled: Boolean(url),
+    staleTime: Infinity,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+}
 
 export function useCreateGeneration() {
   return useMutation({ mutationFn: createGeneration, retry: false });

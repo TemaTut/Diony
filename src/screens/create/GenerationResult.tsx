@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 
-import { useGenerationResult } from "@/api/generations/hooks";
+import { useGenerationPhoto, useGenerationResult } from "@/api/generations/hooks";
 import { generationErrorMessage } from "@/api/generations/generations";
 import Button from "@/components/UI/Button";
-import ButtonLink from "@/components/UI/ButtonLink";
+import ImagePreview from "@/components/UI/ImagePreview";
 import Loader from "@/components/UI/Loader";
 import Paper from "@/components/UI/Paper";
 import SectionHeading from "@/components/UI/SectionHeading";
@@ -16,6 +16,30 @@ export default function GenerationResult({ id, query }: { id: string; query: Ret
   const [failedImage, setFailedImage] = useState<string | null>(null);
   const pending = !isError && (!data || ["pending", "processing"].includes(data.status));
   const completed = data?.status === "completed";
+  const photo = useGenerationPhoto(completed ? data.result_url : null);
+  const [sharing, setSharing] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  async function savePhoto() {
+    if (!photo.data || sharing) return;
+    setSaveMessage(null);
+    const files = [photo.data];
+    if (!navigator.canShare?.({ files })) {
+      setSaveMessage("Нажмите и удерживайте фото выше, затем выберите «Сохранить изображение» или «Добавить в Фото». Если пункта нет, откройте страницу в Safari или Chrome.");
+      return;
+    }
+    setSharing(true);
+    try {
+      // The file is prepared before the click to preserve user activation.
+      await navigator.share({ files });
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
+        setSaveMessage("Не удалось открыть меню сохранения. Нажмите и удерживайте фото выше и выберите сохранение изображения.");
+      }
+    } finally {
+      setSharing(false);
+    }
+  }
 
   return (
     <Paper className="flex flex-col gap-4 p-5 sm:p-6" aria-busy={pending}>
@@ -31,13 +55,11 @@ export default function GenerationResult({ id, query }: { id: string; query: Ret
       </div>}
       {!isError && data?.status === "failed" && <p role="alert" className="text-base text-danger">Не удалось выполнить генерацию. Попробуйте создать новую.</p>}
       {completed && data.result_url && <>
-        <div className="aspect-square w-full overflow-hidden rounded-card bg-surface-raised">
-          {/* Backend result URLs can belong to different image storage providers. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img referrerPolicy="no-referrer" onError={() => setFailedImage(data.result_url)} src={data.result_url} alt="Результат генерации" className="size-full object-contain" />
-        </div>
-        {failedImage === data.result_url && <p role="alert" className="text-base text-danger">Не удалось загрузить изображение из хранилища. Попробуйте скачать файл.</p>}
-        <ButtonLink href={`/api/generations/download?url=${encodeURIComponent(data.result_url)}`} download="diony-generation.jpg" prefetch={false}>Скачать</ButtonLink>
+        <ImagePreview src={data.result_url} alt="Результат генерации" onError={() => setFailedImage(data.result_url)} />
+        {failedImage === data.result_url && <p role="alert" className="text-base text-danger">Не удалось показать изображение. Попробуйте нажать «Сохранить фото».</p>}
+        <Button isLoading={photo.isFetching || sharing} disabled={!photo.data && !photo.isError} onClick={() => photo.isError ? void photo.refetch() : void savePhoto()}>Сохранить фото</Button>
+        {photo.isError && <p role="alert" className="text-base text-danger">Не удалось подготовить фото. Нажмите «Сохранить фото», чтобы повторить.</p>}
+        {saveMessage && <p role="status" className="text-base text-muted">{saveMessage}</p>}
       </>}
     </Paper>
   );
