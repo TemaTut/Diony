@@ -1,8 +1,15 @@
 import axios, { AxiosHeaders, type AxiosRequestConfig } from "axios";
 
+declare module "axios" {
+  interface AxiosRequestConfig {
+    skipAuth?: boolean;
+  }
+}
+
 const AUTH_TOKEN_COOKIE_KEY = "access_token";
 const AUTH_REQUEST_PATHS = new Set(["/auth/telegram"]);
 const AUTH_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24;
+const API_PREFIX = "/api/v1";
 
 export function saveAccessToken(accessToken: string) {
   if (typeof document === "undefined") {
@@ -51,13 +58,23 @@ export function getAccessToken() {
 }
 
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL + "api/v1",
 });
 
 apiClient.interceptors.request.use((config) => {
+  const url = config.url ?? "";
+  const isRelative = !/^(?:[a-z][a-z\d+.-]*:)?\/\//i.test(url);
+  let endpoint = url;
+
+  if (isRelative) {
+    const path = `/${url.replace(/^\/+/, "")}`;
+    endpoint = path === API_PREFIX ? "" : path.startsWith(`${API_PREFIX}/`) ? path.slice(API_PREFIX.length) : path;
+    config.url = `${API_PREFIX}${endpoint}`;
+  }
+
   const token = getAccessToken();
 
-  if (token && !AUTH_REQUEST_PATHS.has(config.url ?? "")) {
+  if (!config.skipAuth && isRelative && token && !AUTH_REQUEST_PATHS.has(endpoint.split("?")[0])) {
     const headers = AxiosHeaders.from(config.headers);
     headers.set("Authorization", `Bearer ${token}`);
     config.headers = headers;
@@ -72,7 +89,7 @@ apiClient.interceptors.response.use(
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
 
-      if (status === 401 || status === 403) {
+      if (!error.config?.skipAuth && (status === 401 || status === 403)) {
         resetAuthAndGoHome();
       }
     }

@@ -1,0 +1,23 @@
+"use client";
+
+import { useMutation, useQuery } from "@tanstack/react-query";
+
+import { createGeneration, getGeneration } from "@/api/generations/generations";
+
+export function useCreateGeneration() {
+  return useMutation({ mutationFn: createGeneration, retry: false });
+}
+
+export function useGenerationResult(id: string | null) {
+  return useQuery({
+    queryKey: ["generation", id],
+    queryFn: ({ signal }) => getGeneration(id!, signal),
+    enabled: Boolean(id),
+    refetchInterval: (query) => {
+      if (query.state.status === "error") return false;
+      return !query.state.data || query.state.data.status === "pending" ? 2000 : false;
+    },
+    refetchOnWindowFocus: false,
+    retry: 2,
+  });
+}
