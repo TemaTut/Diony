@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
     return new Response(image, {
       headers: {
         "Content-Type": format.type,
+        "Access-Control-Allow-Origin": "https://web.telegram.org",
         "Content-Disposition": `${request.nextUrl.searchParams.get("inline") === "1" ? "inline" : "attachment"}; filename="diony-generation.${format.extension}"`,
         "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
