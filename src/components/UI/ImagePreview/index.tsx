@@ -8,9 +8,10 @@ interface ImagePreviewProps {
   src: string;
   alt: string;
   onError?: () => void;
+  onLoad?: () => void;
 }
 
-export default function ImagePreview({ src, alt, onError }: ImagePreviewProps) {
+export default function ImagePreview({ src, alt, onError, onLoad }: ImagePreviewProps) {
   const trigger = useRef<HTMLButtonElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const image = useRef<HTMLImageElement>(null);
@@ -65,7 +66,7 @@ export default function ImagePreview({ src, alt, onError }: ImagePreviewProps) {
     <>
       <Button ref={trigger} variant="surface" className="aspect-square w-full cursor-zoom-in overflow-hidden border-0 bg-surface-raised p-0" aria-label="Открыть фото на весь экран" aria-haspopup="dialog" onClick={open}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt={alt} referrerPolicy="no-referrer" onError={onError} className="size-full object-contain" />
+        <img src={src} alt={alt} referrerPolicy="no-referrer" onLoad={onLoad} onError={onError} className="size-full object-contain" />
       </Button>
       <dialog ref={dialog} aria-label="Просмотр фото. Нажмите на фото, чтобы закрыть" className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none overflow-hidden border-0 bg-black/80 p-4 backdrop:bg-transparent" onCancel={(event) => { event.preventDefault(); void close(); }}>
         <Button variant="surface" className="size-full cursor-zoom-out rounded-none border-0 bg-transparent p-0 hover:bg-transparent" aria-label="Закрыть фото" onClick={() => void close()}>

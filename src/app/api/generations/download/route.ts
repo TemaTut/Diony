@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     return new Response(image, {
       headers: {
         "Content-Type": format.type,
-        "Content-Disposition": `attachment; filename="diony-generation.${format.extension}"`,
+        "Content-Disposition": `${request.nextUrl.searchParams.get("inline") === "1" ? "inline" : "attachment"}; filename="diony-generation.${format.extension}"`,
         "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
       },

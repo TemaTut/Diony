@@ -189,7 +189,7 @@ export default function EditorScreen({
         </Button>
         {create.isError && <p role="alert" className="text-small text-danger">{generationErrorMessage(create.error)}</p>}
       </div>
-      {generationId && <GenerationResult id={generationId} query={result} />}
+      {generationId && <GenerationResult key={generationId} id={generationId} query={result} />}
 
       {formatOpen && (
         <FrameFormatPicker value={format} onChange={setFormat} onClose={closeFormat} />

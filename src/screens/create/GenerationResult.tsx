@@ -10,6 +10,7 @@ import Loader from "@/components/UI/Loader";
 import Paper from "@/components/UI/Paper";
 import SectionHeading from "@/components/UI/SectionHeading";
 import Skeleton from "@/components/UI/Skeleton";
+import { Telegram } from "@/lib/telegram";
 
 export default function GenerationResult({ id, query }: { id: string; query: ReturnType<typeof useGenerationResult> }) {
   const { data, isError, error, isFetching, refetch } = query;
@@ -19,23 +20,53 @@ export default function GenerationResult({ id, query }: { id: string; query: Ret
   const photo = useGenerationPhoto(completed ? data.result_url : null);
   const [sharing, setSharing] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [useBrowser, setUseBrowser] = useState(false);
+
+  function openPhotoInBrowser() {
+    if (!data?.result_url) return;
+    const url = new URL("/api/generations/download", window.location.origin);
+    url.searchParams.set("url", data.result_url);
+    url.searchParams.set("inline", "1");
+    setSaveMessage("В открывшемся изображении нажмите и удерживайте фото, затем выберите «Сохранить изображение» или «Добавить в Фото».");
+    try {
+      if (Telegram.openLink.isAvailable()) {
+        Telegram.openLink(url.href);
+        return;
+      }
+    } catch {
+      // Outside Telegram, use the browser's normal image viewer.
+    }
+    const viewer = window.open(url.href, "_blank");
+    if (viewer) {
+      viewer.opener = null;
+    } else {
+      window.location.assign(url.href);
+    }
+  }
+
+  function handleSave() {
+    if (sharing) return;
+    setSaveMessage(null);
+    if (useBrowser || !photo.data || !navigator.share || !navigator.canShare?.({ files: [photo.data] })) {
+      openPhotoInBrowser();
+      return;
+    }
+    void savePhoto();
+  }
 
   async function savePhoto() {
     if (!photo.data || sharing) return;
     setSaveMessage(null);
     const files = [photo.data];
-    if (!navigator.canShare?.({ files })) {
-      setSaveMessage("Нажмите и удерживайте фото выше, затем выберите «Сохранить изображение» или «Добавить в Фото». Если пункта нет, откройте страницу в Safari или Chrome.");
-      return;
-    }
     setSharing(true);
     try {
       // The file is prepared before the click to preserve user activation.
       await navigator.share({ files });
     } catch (error) {
-      if (!(error instanceof DOMException && error.name === "AbortError")) {
-        setSaveMessage("Не удалось открыть меню сохранения. Нажмите и удерживайте фото выше и выберите сохранение изображения.");
-      }
+      setUseBrowser(true);
+      setSaveMessage(error instanceof DOMException && error.name === "AbortError"
+        ? "Сохранение отменено или меню недоступно. Нажмите «Сохранить фото», чтобы открыть изображение в браузере и сохранить его удержанием."
+        : "Меню сохранения недоступно. Нажмите «Сохранить фото», чтобы открыть изображение в браузере и сохранить его удержанием.");
     } finally {
       setSharing(false);
     }
@@ -55,10 +86,9 @@ export default function GenerationResult({ id, query }: { id: string; query: Ret
       </div>}
       {!isError && data?.status === "failed" && <p role="alert" className="text-base text-danger">Не удалось выполнить генерацию. Попробуйте создать новую.</p>}
       {completed && data.result_url && <>
-        <ImagePreview src={data.result_url} alt="Результат генерации" onError={() => setFailedImage(data.result_url)} />
+        <ImagePreview src={data.result_url} alt="Результат генерации" onLoad={() => setFailedImage(null)} onError={() => setFailedImage(data.result_url)} />
         {failedImage === data.result_url && <p role="alert" className="text-base text-danger">Не удалось показать изображение. Попробуйте нажать «Сохранить фото».</p>}
-        <Button isLoading={photo.isFetching || sharing} disabled={!photo.data && !photo.isError} onClick={() => photo.isError ? void photo.refetch() : void savePhoto()}>Сохранить фото</Button>
-        {photo.isError && <p role="alert" className="text-base text-danger">Не удалось подготовить фото. Нажмите «Сохранить фото», чтобы повторить.</p>}
+        <Button isLoading={sharing} onClick={handleSave}>Сохранить фото</Button>
         {saveMessage && <p role="status" className="text-base text-muted">{saveMessage}</p>}
       </>}
     </Paper>
