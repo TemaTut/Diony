@@ -1,9 +1,9 @@
 "use client";
 
-import { ArrowLeft, Banana, ChevronDown, Maximize, Sparkles } from "lucide-react";
+import { ArrowLeft, ChevronDown, Maximize, Sparkles } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 
-import { useCreateGeneration, useGenerationResult } from "@/api/generations/hooks";
+import { useCreateGeneration, useGenerationModels, useGenerationResult } from "@/api/generations/hooks";
 import { generationErrorMessage } from "@/api/generations/generations";
 import type { GenerationImage } from "@/api/generations/types";
 import GenerationResult from "@/screens/create/GenerationResult";
@@ -15,20 +15,12 @@ import Modal from "@/components/UI/Modal";
 import Paper from "@/components/UI/Paper";
 import SectionHeading from "@/components/UI/SectionHeading";
 import Select from "@/components/UI/Select";
+import Skeleton from "@/components/UI/Skeleton";
 import Textarea from "@/components/UI/Textarea";
 import Toggle from "@/components/UI/Toggle";
-import Tooltip from "@/components/UI/Tooltip";
 import { referenceSections } from "@/data/references";
 import FrameFormatPicker from "@/screens/create/FrameFormatPicker";
 import ImageUpload from "@/screens/create/ImageUpload";
-
-const models = [
-  {
-    value: "Nano Banana Pro 2.1 Edit",
-    label: "Nano Banana Pro 2.1 Edit",
-    icon: <Banana size={32} />,
-  },
-];
 
 export default function EditorScreen({
   media,
@@ -48,33 +40,57 @@ export default function EditorScreen({
   const lastAttempt = useRef<{ fingerprint: string; key: string } | null>(null);
   const busy = create.isPending || Boolean(generationId && (result.isPending || result.data?.status === "pending" || result.data?.status === "processing"));
 
-  const [model, setModel] = useState(models[0].value);
-  const [editable, setEditable] = useState(false);
-  const [format, setFormat] = useState("Авто");
-  const [formatOpen, setFormatOpen] = useState(false);
+  const models = useGenerationModels();
+  const modelOptions = Object.keys(models.data ?? {}).map((key) => ({ value: key, label: key }));
+  const [selectedModel, setSelectedModel] = useState("nano-banana-2.1");
+  const modelKey = modelOptions.some((option) => option.value === selectedModel)
+    ? selectedModel
+    : modelOptions[0]?.value ?? "";
+  const model = models.data?.[modelKey];
+  const [selectedFormat, setFormat] = useState<string>();
+  const [selectedSize, setSize] = useState<string>();
+  const formats = model?.aspect_ratio ?? [];
+  const sizes = model?.size ?? [];
+  const format = selectedFormat && formats.includes(selectedFormat)
+    ? selectedFormat
+    : formats.includes("1:1") ? "1:1" : formats[0];
+  const size = selectedSize && sizes.includes(selectedSize)
+    ? selectedSize
+    : sizes.includes("auto") ? "auto" : sizes[0];
+  const modelsReady = models.isSuccess && Boolean(model);
+  const parameters = [
+    { key: "aspectRatio", title: "Формат кадра", value: format, options: formats, onChange: setFormat },
+    { key: "size", title: "Размер изображения", value: size, options: sizes, onChange: setSize },
+  ];
+  const [openParameter, setOpenParameter] = useState<string | null>(null);
+  const activeParameter = parameters.find((parameter) => parameter.key === openParameter);
   const [expanded, setExpanded] = useState(false);
-  const closeFormat = useCallback(() => setFormatOpen(false), []);
+  const closeParameter = useCallback(() => setOpenParameter(null), []);
   const closePrompt = useCallback(() => setExpanded(false), []);
 
   function generate() {
-    if (media !== "photo" || busy) return;
-    const fingerprint = JSON.stringify({ model, prompt, images: images.map((image) => image.url), format, editable });
+    if (media !== "photo" || busy || !modelsReady || !model) return;
+    const input = {
+      model: model.model,
+      prompt: prompt.trim(),
+      images: [...images],
+      ...(format ? { aspectRatio: format } : {}),
+      ...(size ? { size } : {}),
+    };
+    const fingerprint = JSON.stringify({
+      ...input,
+      images: input.images.map((image) => ({ url: image.url, name: image.name })),
+    });
     const key = create.isError && lastAttempt.current?.fingerprint === fingerprint
       ? lastAttempt.current.key
       : crypto.randomUUID();
     lastAttempt.current = { fingerprint, key };
     setGenerationId(null);
     create.mutate({
-      mediaType: "photo",
-      modelId: model,
-      prompt,
-      images: [...images],
-      aspectRatio: format === "Авто" ? "auto" : format,
-      editablePrompt: editable,
+      ...input,
       idempotencyKey: key,
     }, { onSuccess: (data) => setGenerationId(data.id) });
   }
-
 
   return (
     <section className="mx-auto w-full max-w-2xl flex flex-col gap-6 py-4">
@@ -99,21 +115,43 @@ export default function EditorScreen({
         <label htmlFor="generation-model" className="block text-base text-muted">
           Нейросеть
         </label>
-        <Select
-          id="generation-model"
-          label="Нейросеть"
-          value={model}
-          options={models}
-          onChange={setModel}
-        />
+        {models.isPending ? (
+          <Skeleton className="h-20 w-full" role="status" aria-label="Загружаем нейросети" />
+        ) : models.isError ? (
+          <div className="flex min-h-20 flex-col gap-3">
+            <p role="alert" className="text-base text-danger">
+              Не удалось загрузить нейросети. {generationErrorMessage(models.error)}
+            </p>
+            <Button variant="secondary" isLoading={models.isFetching} onClick={() => void models.refetch()}>
+              Повторить загрузку
+            </Button>
+          </div>
+        ) : modelOptions.length === 0 ? (
+          <p role="status" className="flex min-h-20 items-center text-base text-muted">
+            Сейчас нет доступных нейросетей.
+          </p>
+        ) : (
+          <Select
+            id="generation-model"
+            label="Нейросеть"
+            value={modelKey}
+            options={modelOptions}
+            disabled={busy}
+            onChange={(value) => {
+              setSelectedModel(value);
+              setFormat(undefined);
+              setSize(undefined);
+              setOpenParameter(null);
+            }}
+          />
+        )}
       </div>
       {media === "video" && (
         <p
           role="status"
           className="rounded-card border border-line p-4 text-base text-muted"
         >
-          Генерация видео скоро появится. Nano Banana Pro 2.1 Edit работает с
-          изображениями.
+          Генерация видео скоро появится. Доступные нейросети работают с изображениями.
         </p>
       )}
       <ImageUpload images={images} onChange={setImages} disabled={busy} />
@@ -125,17 +163,12 @@ export default function EditorScreen({
           <div className="flex items-center gap-3">
             <Toggle
               label="Редактируемый промпт"
-              checked={editable}
-              onChange={setEditable}
+              checked={false}
+              disabled
+              aria-describedby="editable-prompt-hint"
+              onChange={() => {}}
             />
-            <Tooltip
-              label="Что такое редактируемый промпт"
-              title="Редактируемый промпт"
-            >
-              Превратим описание в шаблон с полями, например: платье {"{{красного}}"}{" "}
-              цвета. После публикации другие смогут менять эти поля, не видя исходный
-              промпт.
-            </Tooltip>
+            <span id="editable-prompt-hint" className="text-small text-muted">Скоро появится</span>
           </div>
         </div>
         <div className="rounded-card bg-surface p-4 sm:p-5">
@@ -150,7 +183,7 @@ export default function EditorScreen({
           />
           <div className="mt-2 flex items-center justify-between gap-2">
             <span className="text-small text-quiet">
-              {prompt.length} / 4000{editable && " · {{параметр}}"}
+              {prompt.length} / 4000
             </span>
             <IconButton
               aria-label="Развернуть промпт"
@@ -161,25 +194,30 @@ export default function EditorScreen({
           </div>
         </div>
       </div>
-      <Button
-        variant="surface"
-        onClick={() => setFormatOpen(true)}
-        aria-haspopup="dialog"
-        aria-expanded={formatOpen}
-        className="w-full justify-between bg-surface p-5 text-lead sm:p-6"
-      >
-        <span className="flex items-center gap-3 text-muted">
-          <Maximize size={19} />
-          Формат кадра <span className="text-danger">*</span>
-        </span>
-        <span className="flex items-center gap-3">
-          {format}
-          <ChevronDown size={20} />
-        </span>
-      </Button>
+      {models.isPending && <Skeleton className="h-20 w-full" aria-hidden="true" />}
+      {modelsReady && parameters.map((parameter) => parameter.value && (
+        <Button
+          key={parameter.key}
+          variant="surface"
+          disabled={busy}
+          onClick={() => setOpenParameter(parameter.key)}
+          aria-haspopup="dialog"
+          aria-expanded={openParameter === parameter.key}
+          className="w-full justify-between bg-surface p-5 text-lead sm:p-6"
+        >
+          <span className="flex items-center gap-3 text-muted">
+            <Maximize size={19} />
+            {parameter.title}
+          </span>
+          <span className="flex items-center gap-3">
+            {parameter.value === "auto" ? "Авто" : parameter.value}
+            <ChevronDown size={20} />
+          </span>
+        </Button>
+      ))}
       <div className="flex flex-col gap-3">
         <Button
-          disabled={media === "video" || !prompt.trim() || images.length === 0 || busy}
+          disabled={media === "video" || !modelsReady || !prompt.trim() || images.length === 0 || busy}
           isLoading={create.isPending}
           onClick={generate}
           className="w-full"
@@ -191,8 +229,14 @@ export default function EditorScreen({
       </div>
       {generationId && <GenerationResult key={generationId} id={generationId} query={result} />}
 
-      {formatOpen && (
-        <FrameFormatPicker value={format} onChange={setFormat} onClose={closeFormat} />
+      {modelsReady && activeParameter?.value && (
+        <FrameFormatPicker
+          title={activeParameter.title}
+          options={activeParameter.options}
+          value={activeParameter.value}
+          onChange={activeParameter.onChange}
+          onClose={closeParameter}
+        />
       )}
       {expanded && (
         <Modal title="Промпт" className="max-w-2xl" onClose={closePrompt}>

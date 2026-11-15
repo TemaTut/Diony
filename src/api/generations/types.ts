@@ -7,14 +7,23 @@ export type GenerationImage = {
 };
 
 export type CreateGenerationInput = {
-  mediaType: "photo";
-  modelId: string;
+  model: string;
   prompt: string;
   images: GenerationImage[];
-  aspectRatio: string;
-  editablePrompt: boolean;
+  aspectRatio?: string;
+  size?: string;
   idempotencyKey: string;
 };
+
+export type GenerationModel = {
+  model: string;
+  prompt: string;
+  images: string;
+  aspect_ratio?: string[];
+  size?: string[];
+};
+
+export type GenerationModels = Record<string, GenerationModel>;
 
 export type CreatedGeneration = { id: string; status: GenerationStatus };
 export type GenerationResult = { status: GenerationStatus; result_url: string | null };
