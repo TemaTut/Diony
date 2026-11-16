@@ -9,6 +9,7 @@ export type GenerationImage = {
 export type CreateGenerationInput = {
   model: string;
   prompt: string;
+  enhance: boolean;
   images: GenerationImage[];
   aspectRatio?: string;
   size?: string;

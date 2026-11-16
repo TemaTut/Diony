@@ -90,6 +90,7 @@ export async function createGeneration(input: CreateGenerationInput): Promise<Cr
   }
 
   const { data } = await api.post<CreatedGeneration>("/generations", body, {
+    params: { enhance: input.enhance },
     headers: { "Idempotency-Key": input.idempotencyKey },
     skipAuth: true,
   });

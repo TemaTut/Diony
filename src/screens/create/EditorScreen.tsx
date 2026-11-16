@@ -3,7 +3,11 @@
 import { ArrowLeft, ChevronDown, Maximize, Sparkles } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 
-import { useCreateGeneration, useGenerationModels, useGenerationResult } from "@/api/generations/hooks";
+import {
+  useCreateGeneration,
+  useGenerationModels,
+  useGenerationResult,
+} from "@/api/generations/hooks";
 import { generationErrorMessage } from "@/api/generations/generations";
 import type { GenerationImage } from "@/api/generations/types";
 import GenerationResult from "@/screens/create/GenerationResult";
@@ -33,34 +37,60 @@ export default function EditorScreen({
     .flatMap((section) => section.items)
     .find((item) => item.id === referenceId);
   const [prompt, setPrompt] = useState(reference?.prompt ?? "");
+  const [enhance, setEnhance] = useState(false);
   const [images, setImages] = useState<GenerationImage[]>(() => reference?.images ?? []);
   const [generationId, setGenerationId] = useState<string | null>(null);
   const create = useCreateGeneration();
   const result = useGenerationResult(generationId);
   const lastAttempt = useRef<{ fingerprint: string; key: string } | null>(null);
-  const busy = create.isPending || Boolean(generationId && (result.isPending || result.data?.status === "pending" || result.data?.status === "processing"));
+  const busy =
+    create.isPending ||
+    Boolean(
+      generationId &&
+      (result.isPending ||
+        result.data?.status === "pending" ||
+        result.data?.status === "processing"),
+    );
 
   const models = useGenerationModels();
   const modelOptions = Object.keys(models.data ?? {}).map((key) => ({ value: key, label: key }));
   const [selectedModel, setSelectedModel] = useState("nano-banana-2.1");
   const modelKey = modelOptions.some((option) => option.value === selectedModel)
     ? selectedModel
-    : modelOptions[0]?.value ?? "";
+    : (modelOptions[0]?.value ?? "");
   const model = models.data?.[modelKey];
   const [selectedFormat, setFormat] = useState<string>();
   const [selectedSize, setSize] = useState<string>();
   const formats = model?.aspect_ratio ?? [];
   const sizes = model?.size ?? [];
-  const format = selectedFormat && formats.includes(selectedFormat)
-    ? selectedFormat
-    : formats.includes("1:1") ? "1:1" : formats[0];
-  const size = selectedSize && sizes.includes(selectedSize)
-    ? selectedSize
-    : sizes.includes("auto") ? "auto" : sizes[0];
+  const format =
+    selectedFormat && formats.includes(selectedFormat)
+      ? selectedFormat
+      : formats.includes("1:1")
+       ? "1:1"
+       : formats[0];
+  const size =
+    selectedSize && sizes.includes(selectedSize)
+      ? selectedSize
+      : sizes.includes("auto")
+       ? "auto"
+       : sizes[0];
   const modelsReady = models.isSuccess && Boolean(model);
   const parameters = [
-    { key: "aspectRatio", title: "Формат кадра", value: format, options: formats, onChange: setFormat },
-    { key: "size", title: "Размер изображения", value: size, options: sizes, onChange: setSize },
+    {
+      key: "aspectRatio",
+      title: "Формат кадра",
+      value: format,
+      options: formats,
+      onChange: setFormat,
+    },
+    {
+      key: "size",
+      title: "Размер изображения",
+      value: size,
+      options: sizes,
+      onChange: setSize,
+    },
   ];
   const [openParameter, setOpenParameter] = useState<string | null>(null);
   const activeParameter = parameters.find((parameter) => parameter.key === openParameter);
@@ -73,6 +103,7 @@ export default function EditorScreen({
     const input = {
       model: model.model,
       prompt: prompt.trim(),
+      enhance,
       images: [...images],
       ...(format ? { aspectRatio: format } : {}),
       ...(size ? { size } : {}),
@@ -81,15 +112,19 @@ export default function EditorScreen({
       ...input,
       images: input.images.map((image) => ({ url: image.url, name: image.name })),
     });
-    const key = create.isError && lastAttempt.current?.fingerprint === fingerprint
-      ? lastAttempt.current.key
-      : crypto.randomUUID();
+    const key =
+      create.isError && lastAttempt.current?.fingerprint === fingerprint
+        ? lastAttempt.current.key
+        : crypto.randomUUID();
     lastAttempt.current = { fingerprint, key };
     setGenerationId(null);
-    create.mutate({
-      ...input,
-      idempotencyKey: key,
-    }, { onSuccess: (data) => setGenerationId(data.id) });
+    create.mutate(
+      {
+        ...input,
+        idempotencyKey: key,
+      },
+      { onSuccess: (data) => setGenerationId(data.id) },
+    );
   }
 
   return (
@@ -116,13 +151,21 @@ export default function EditorScreen({
           Нейросеть
         </label>
         {models.isPending ? (
-          <Skeleton className="h-20 w-full" role="status" aria-label="Загружаем нейросети" />
+          <Skeleton
+            className="h-20 w-full"
+            role="status"
+            aria-label="Загружаем нейросети"
+          />
         ) : models.isError ? (
           <div className="flex min-h-20 flex-col gap-3">
             <p role="alert" className="text-base text-danger">
               Не удалось загрузить нейросети. {generationErrorMessage(models.error)}
             </p>
-            <Button variant="secondary" isLoading={models.isFetching} onClick={() => void models.refetch()}>
+            <Button
+              variant="secondary"
+              isLoading={models.isFetching}
+              onClick={() => void models.refetch()}
+            >
               Повторить загрузку
             </Button>
           </div>
@@ -162,13 +205,11 @@ export default function EditorScreen({
           </label>
           <div className="flex items-center gap-3">
             <Toggle
-              label="Редактируемый промпт"
-              checked={false}
-              disabled
-              aria-describedby="editable-prompt-hint"
-              onChange={() => {}}
+              label="Улучшение промпта"
+              checked={enhance}
+              disabled={busy}
+              onChange={setEnhance}
             />
-            <span id="editable-prompt-hint" className="text-small text-muted">Скоро появится</span>
           </div>
         </div>
         <div className="rounded-card bg-surface p-4 sm:p-5">
@@ -182,9 +223,7 @@ export default function EditorScreen({
             className="min-h-52 border-0 p-0 text-lead"
           />
           <div className="mt-2 flex items-center justify-between gap-2">
-            <span className="text-small text-quiet">
-              {prompt.length} / 4000
-            </span>
+            <span className="text-small text-quiet">{prompt.length} / 4000</span>
             <IconButton
               aria-label="Развернуть промпт"
               onClick={() => setExpanded(true)}
@@ -195,39 +234,59 @@ export default function EditorScreen({
         </div>
       </div>
       {models.isPending && <Skeleton className="h-20 w-full" aria-hidden="true" />}
-      {modelsReady && parameters.map((parameter) => parameter.value && (
-        <Button
-          key={parameter.key}
-          variant="surface"
-          disabled={busy}
-          onClick={() => setOpenParameter(parameter.key)}
-          aria-haspopup="dialog"
-          aria-expanded={openParameter === parameter.key}
-          className="w-full justify-between bg-surface p-5 text-lead sm:p-6"
-        >
-          <span className="flex items-center gap-3 text-muted">
-            <Maximize size={19} />
-            {parameter.title}
-          </span>
-          <span className="flex items-center gap-3">
-            {parameter.value === "auto" ? "Авто" : parameter.value}
-            <ChevronDown size={20} />
-          </span>
-        </Button>
-      ))}
+      {modelsReady &&
+        parameters.map(
+          (parameter) =>
+            parameter.value && (
+              <Button
+                key={parameter.key}
+                variant="surface"
+                disabled={busy}
+                onClick={() => setOpenParameter(parameter.key)}
+                aria-haspopup="dialog"
+                aria-expanded={openParameter === parameter.key}
+                className="w-full justify-between bg-surface p-5 text-lead sm:p-6"
+              >
+                <span className="flex items-center gap-3 text-muted">
+                  <Maximize size={19} />
+                  {parameter.title}
+                </span>
+                <span className="flex items-center gap-3">
+                  {parameter.value === "auto" ? "Авто" : parameter.value}
+                  <ChevronDown size={20} />
+                </span>
+              </Button>
+            ),
+        )}
       <div className="flex flex-col gap-3">
         <Button
-          disabled={media === "video" || !modelsReady || !prompt.trim() || images.length === 0 || busy}
+          disabled={
+            media === "video" ||
+            !modelsReady ||
+            !prompt.trim() ||
+            images.length === 0 ||
+            busy
+          }
           isLoading={create.isPending}
           onClick={generate}
           className="w-full"
           iconLeft={<Sparkles size={18} />}
         >
-          {busy ? "Генерация выполняется…" : create.isError ? "Повторить запрос" : `Сгенерировать ${media === "photo" ? "изображение" : "видео"}`}
+          {busy
+            ? "Генерация выполняется…"
+            : create.isError
+             ? "Повторить запрос"
+             : `Сгенерировать ${media === "photo" ? "изображение" : "видео"}`}
         </Button>
-        {create.isError && <p role="alert" className="text-small text-danger">{generationErrorMessage(create.error)}</p>}
+        {create.isError && (
+          <p role="alert" className="text-small text-danger">
+            {generationErrorMessage(create.error)}
+          </p>
+        )}
       </div>
-      {generationId && <GenerationResult key={generationId} id={generationId} query={result} />}
+      {generationId && (
+        <GenerationResult key={generationId} id={generationId} query={result} />
+      )}
 
       {modelsReady && activeParameter?.value && (
         <FrameFormatPicker
