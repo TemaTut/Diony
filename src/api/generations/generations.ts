@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { type AxiosResponse } from "axios";
 
 import api from "@/api/client";
 import {
@@ -154,21 +154,47 @@ export async function getGeneration(id: string, signal?: AbortSignal): Promise<G
 }
 
 export async function getGenerationPhoto(url: string, signal?: AbortSignal): Promise<File> {
-  const { data } = await axios.get<Blob>("/api/generations/download", {
-    params: { url },
-    responseType: "blob",
-    signal,
-  });
-  const extensions: Record<string, string> = {
-    "image/jpeg": "jpg",
-    "image/png": "png",
-    "image/webp": "webp",
-    "image/gif": "gif",
-    "image/avif": "avif",
-  };
-  const extension = extensions[data.type];
-  if (!extension) throw new Error("Не удалось подготовить фото для сохранения.");
-  return new File([data], `diony-generation.${extension}`, { type: data.type });
+  const started = Date.now();
+  let response: AxiosResponse<Blob> | undefined;
+  try {
+    response = await axios.get<Blob>("/api/generations/download", {
+      params: { url },
+      responseType: "blob",
+      signal,
+    });
+    const data = response.data;
+    const extensions: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "image/gif": "gif",
+      "image/avif": "avif",
+    };
+    const extension = extensions[data.type];
+    if (!extension) throw new Error("Неподдерживаемый тип ответа при подготовке фото.");
+    if (!data.size) throw new Error("Сервер вернул пустой файл.");
+    return new File([data], `diony-generation.${extension}`, { type: data.type });
+  } catch (error) {
+    if (axios.isCancel(error)) throw error;
+    if (axios.isAxiosError<Blob>(error)) response = error.response;
+    const blob = response?.data;
+    const contentType = response?.headers["content-type"] ?? blob?.type ?? "неизвестен";
+    const body = blob instanceof Blob && !blob.type.startsWith("image/")
+      ? await blob.slice(0, 1000).text()
+      : "";
+    throw new Error([
+      "Этап: скачивание и подготовка файла",
+      "Запрос: /api/generations/download",
+      `HTTP: ${response?.status ?? "нет ответа"}`,
+      `Код: ${axios.isAxiosError(error) ? error.code ?? "не указан" : "не указан"}`,
+      `Ошибка: ${error instanceof Error ? `${error.name}: ${error.message}` : "неизвестная ошибка"}`,
+      `Content-Type: ${contentType}`,
+      `Размер: ${blob instanceof Blob ? blob.size : "неизвестен"} байт`,
+      `Время: ${Date.now() - started} мс`,
+      `Vercel ID: ${response?.headers["x-vercel-id"] ?? "нет"}`,
+      ...(body ? [`Ответ сервера (до 1000 байт): ${body}`] : []),
+    ].join("\n"));
+  }
 }
 
 export function generationErrorMessage(error: unknown): string {
