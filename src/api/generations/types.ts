@@ -16,6 +16,14 @@ export type CreateGenerationInput = {
   idempotencyKey: string;
 };
 
+export type CreateNsfwGenerationInput = {
+  prompt: string;
+  characterReferences: GenerationImage[];
+  environmentReference?: GenerationImage[];
+  postureReference?: GenerationImage[];
+  aspectRatio?: string;
+};
+
 export type GenerationModel = {
   model: string;
   prompt: string;

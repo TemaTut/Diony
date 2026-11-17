@@ -5,6 +5,8 @@ import {
   MAX_IMAGES,
   MAX_IMAGE_BYTES,
   type CreateGenerationInput,
+  type CreateNsfwGenerationInput,
+  type GenerationImage,
   type CreatedGeneration,
   type GenerationModels,
   type GenerationResult,
@@ -58,6 +60,54 @@ export async function getGenerationModels(signal?: AbortSignal): Promise<Generat
   return models;
 }
 
+async function appendImages(body: FormData, field: string, images: GenerationImage[]) {
+  for (const image of images) {
+    let file = image.file;
+    if (!file) {
+      // Bundled reference pictures must also be sent as files, not URLs.
+      const url = new URL(image.url, window.location.origin);
+      if (url.origin !== window.location.origin)
+        throw new Error("Недоступен исходный файл референса.");
+      const response = await axios.get<Blob>(url.href, { responseType: "blob" });
+      const extension = url.pathname.split(".").pop() ?? "png";
+      file = new File([response.data], `${image.name}.${extension}`, {
+        type: response.data.type,
+      });
+    }
+    if (file.size > MAX_IMAGE_BYTES) throw new Error(`Файл «${image.name}» превышает 7 МБ.`);
+    body.append(field, file, file.name);
+  }
+}
+
+export async function createNsfwGeneration(input: CreateNsfwGenerationInput): Promise<CreatedGeneration> {
+  if (!process.env.NEXT_PUBLIC_API_BASE_URL) throw new Error("Не настроен адрес API.");
+  if (!input.prompt.trim() || input.prompt.length > 4000)
+    throw new Error("Введите промпт длиной до 4000 символов.");
+  if (!input.characterReferences.length)
+    throw new Error("Добавьте фото персонажа.");
+  const images = [
+    ...input.characterReferences,
+    ...(input.environmentReference ?? []),
+    ...(input.postureReference ?? []),
+  ];
+  if (images.length > MAX_IMAGES) throw new Error("Добавьте не больше 14 изображений.");
+
+  const body = new FormData();
+  body.append("prompt", input.prompt.trim());
+  if (input.aspectRatio) body.append("aspect_ratio", input.aspectRatio);
+  await appendImages(body, "character_references", input.characterReferences);
+  await appendImages(body, "environment_reference", input.environmentReference ?? []);
+  await appendImages(body, "posture_reference", input.postureReference ?? []);
+
+  const { data } = await api.post<CreatedGeneration>("/generations/nsfw", body, {
+    skipAuth: true,
+  });
+  if (typeof data.id !== "string" || !data.id)
+    throw new Error("Сервер не вернул ID генерации. Повторите запрос.");
+  checkStatus(data.status);
+  return data;
+}
+
 export async function createGeneration(input: CreateGenerationInput): Promise<CreatedGeneration> {
   if (!process.env.NEXT_PUBLIC_API_BASE_URL) throw new Error("Не настроен адрес API.");
   if (!input.model.trim()) throw new Error("Выберите нейросеть.");
@@ -72,22 +122,7 @@ export async function createGeneration(input: CreateGenerationInput): Promise<Cr
   if (input.aspectRatio) body.append("aspect_ratio", input.aspectRatio);
   if (input.size) body.append("size", input.size);
 
-  for (const image of input.images) {
-    let file = image.file;
-    if (!file) {
-      // Bundled reference pictures must also be sent as files, not URLs.
-      const url = new URL(image.url, window.location.origin);
-      if (url.origin !== window.location.origin)
-        throw new Error("Недоступен исходный файл референса.");
-      const response = await axios.get<Blob>(url.href, { responseType: "blob" });
-      const extension = url.pathname.split(".").pop() ?? "png";
-      file = new File([response.data], `${image.name}.${extension}`, {
-        type: response.data.type,
-      });
-    }
-    if (file.size > MAX_IMAGE_BYTES) throw new Error(`Файл «${image.name}» превышает 7 МБ.`);
-    body.append("images", file, file.name);
-  }
+  await appendImages(body, "images", input.images);
 
   const { data } = await api.post<CreatedGeneration>("/generations", body, {
     params: { enhance: input.enhance },

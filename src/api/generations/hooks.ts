@@ -2,11 +2,12 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 
-import { createGeneration, getGeneration, getGenerationModels, getGenerationPhoto } from "@/api/generations/generations";
+import { createGeneration, createNsfwGeneration, getGeneration, getGenerationModels, getGenerationPhoto } from "@/api/generations/generations";
 
-export function useGenerationModels() {
+export function useGenerationModels(enabled = true) {
   return useQuery({
     queryKey: ["generation-models"],
+    enabled,
     queryFn: ({ signal }) => getGenerationModels(signal),
     staleTime: 5 * 60 * 1000,
     retry: 1,
@@ -23,6 +24,10 @@ export function useGenerationPhoto(url: string | null) {
     retry: 1,
     refetchOnWindowFocus: false,
   });
+}
+
+export function useCreateNsfwGeneration() {
+  return useMutation({ mutationFn: createNsfwGeneration, retry: false });
 }
 
 export function useCreateGeneration() {

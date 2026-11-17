@@ -5,6 +5,7 @@ import { useCallback, useRef, useState } from "react";
 
 import {
   useCreateGeneration,
+  useCreateNsfwGeneration,
   useGenerationModels,
   useGenerationResult,
 } from "@/api/generations/hooks";
@@ -37,14 +38,19 @@ export default function EditorScreen({
     .flatMap((section) => section.items)
     .find((item) => item.id === referenceId);
   const [prompt, setPrompt] = useState(reference?.prompt ?? "");
+  const [nsfwEnabled, setNsfwEnabled] = useState(false);
+  const canUseNsfw = media === "photo" && !referenceId;
+  const nsfw = canUseNsfw && nsfwEnabled;
   const [enhance, setEnhance] = useState(false);
   const [images, setImages] = useState<GenerationImage[]>(() => reference?.images ?? []);
   const [generationId, setGenerationId] = useState<string | null>(null);
   const create = useCreateGeneration();
+  const createNsfw = useCreateNsfwGeneration();
+  const activeCreate = nsfw ? createNsfw : create;
   const result = useGenerationResult(generationId);
   const lastAttempt = useRef<{ fingerprint: string; key: string } | null>(null);
   const busy =
-    create.isPending ||
+    create.isPending || createNsfw.isPending ||
     Boolean(
       generationId &&
       (result.isPending ||
@@ -52,7 +58,7 @@ export default function EditorScreen({
         result.data?.status === "processing"),
     );
 
-  const models = useGenerationModels();
+  const models = useGenerationModels(!nsfw);
   const modelOptions = Object.keys(models.data ?? {}).map((key) => ({ value: key, label: key }));
   const [selectedModel, setSelectedModel] = useState("nano-banana-2.1");
   const modelKey = modelOptions.some((option) => option.value === selectedModel)
@@ -99,7 +105,16 @@ export default function EditorScreen({
   const closePrompt = useCallback(() => setExpanded(false), []);
 
   function generate() {
-    if (media !== "photo" || busy || !modelsReady || !model) return;
+    if (media !== "photo" || busy || !prompt.trim() || !images.length) return;
+    if (nsfw) {
+      setGenerationId(null);
+      createNsfw.mutate({
+        prompt: prompt.trim(),
+        characterReferences: [...images],
+      }, { onSuccess: (data) => setGenerationId(data.id) });
+      return;
+    }
+    if (!modelsReady || !model) return;
     const input = {
       model: model.model,
       prompt: prompt.trim(),
@@ -147,46 +162,61 @@ export default function EditorScreen({
         </Paper>
       )}
       <div className="flex flex-col gap-3">
-        <label htmlFor="generation-model" className="block text-base text-muted">
-          Нейросеть
-        </label>
-        {models.isPending ? (
-          <Skeleton
-            className="h-20 w-full"
-            role="status"
-            aria-label="Загружаем нейросети"
-          />
-        ) : models.isError ? (
-          <div className="flex min-h-20 flex-col gap-3">
-            <p role="alert" className="text-base text-danger">
-              Не удалось загрузить нейросети. {generationErrorMessage(models.error)}
-            </p>
-            <Button
-              variant="secondary"
-              isLoading={models.isFetching}
-              onClick={() => void models.refetch()}
-            >
-              Повторить загрузку
-            </Button>
-          </div>
-        ) : modelOptions.length === 0 ? (
-          <p role="status" className="flex min-h-20 items-center text-base text-muted">
-            Сейчас нет доступных нейросетей.
-          </p>
-        ) : (
-          <Select
-            id="generation-model"
-            label="Нейросеть"
-            value={modelKey}
-            options={modelOptions}
+        {canUseNsfw && (
+          <Toggle
+            label="NSFW-режим"
+            checked={nsfw}
             disabled={busy}
             onChange={(value) => {
-              setSelectedModel(value);
-              setFormat(undefined);
-              setSize(undefined);
+              setNsfwEnabled(value);
               setOpenParameter(null);
             }}
           />
+        )}
+        {!nsfw && (
+          <>
+            <label htmlFor="generation-model" className="block text-base text-muted">
+              Нейросеть
+            </label>
+            {models.isPending ? (
+              <Skeleton
+                className="h-20 w-full"
+                role="status"
+                aria-label="Загружаем нейросети"
+              />
+            ) : models.isError ? (
+              <div className="flex min-h-20 flex-col gap-3">
+                <p role="alert" className="text-base text-danger">
+                  Не удалось загрузить нейросети. {generationErrorMessage(models.error)}
+                </p>
+                <Button
+                  variant="secondary"
+                  isLoading={models.isFetching}
+                  onClick={() => void models.refetch()}
+                >
+                  Повторить загрузку
+                </Button>
+              </div>
+            ) : modelOptions.length === 0 ? (
+              <p role="status" className="flex min-h-20 items-center text-base text-muted">
+                Сейчас нет доступных нейросетей.
+              </p>
+            ) : (
+              <Select
+                id="generation-model"
+                label="Нейросеть"
+                value={modelKey}
+                options={modelOptions}
+                disabled={busy}
+                onChange={(value) => {
+                  setSelectedModel(value);
+                  setFormat(undefined);
+                  setSize(undefined);
+                  setOpenParameter(null);
+                }}
+              />
+            )}
+          </>
         )}
       </div>
       {media === "video" && (
@@ -197,20 +227,21 @@ export default function EditorScreen({
           Генерация видео скоро появится. Доступные нейросети работают с изображениями.
         </p>
       )}
+      {nsfw && <p className="text-small text-muted">Загрузите фото персонажа и опишите желаемые изменения.</p>}
       <ImageUpload images={images} onChange={setImages} disabled={busy} />
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <label htmlFor="generation-prompt" className="text-lead">
             Промпт <span className="text-danger">*</span>
           </label>
-          <div className="flex items-center gap-3">
+          {!nsfw && (
             <Toggle
               label="Улучшение промпта"
               checked={enhance}
               disabled={busy}
               onChange={setEnhance}
             />
-          </div>
+          )}
         </div>
         <div className="rounded-card bg-surface p-4 sm:p-5">
           <Textarea
@@ -233,8 +264,8 @@ export default function EditorScreen({
           </div>
         </div>
       </div>
-      {models.isPending && <Skeleton className="h-20 w-full" aria-hidden="true" />}
-      {modelsReady &&
+      {!nsfw && models.isPending && <Skeleton className="h-20 w-full" aria-hidden="true" />}
+      {!nsfw && modelsReady &&
         parameters.map(
           (parameter) =>
             parameter.value && (
@@ -262,25 +293,25 @@ export default function EditorScreen({
         <Button
           disabled={
             media === "video" ||
-            !modelsReady ||
+            (!nsfw && !modelsReady) ||
             !prompt.trim() ||
             images.length === 0 ||
             busy
           }
-          isLoading={create.isPending}
+          isLoading={activeCreate.isPending}
           onClick={generate}
           className="w-full"
           iconLeft={<Sparkles size={18} />}
         >
           {busy
             ? "Генерация выполняется…"
-            : create.isError
+            : activeCreate.isError
              ? "Повторить запрос"
              : `Сгенерировать ${media === "photo" ? "изображение" : "видео"}`}
         </Button>
-        {create.isError && (
+        {activeCreate.isError && (
           <p role="alert" className="text-small text-danger">
-            {generationErrorMessage(create.error)}
+            {generationErrorMessage(activeCreate.error)}
           </p>
         )}
       </div>
@@ -288,7 +319,7 @@ export default function EditorScreen({
         <GenerationResult key={generationId} id={generationId} query={result} />
       )}
 
-      {modelsReady && activeParameter?.value && (
+      {!nsfw && modelsReady && activeParameter?.value && (
         <FrameFormatPicker
           title={activeParameter.title}
           options={activeParameter.options}
