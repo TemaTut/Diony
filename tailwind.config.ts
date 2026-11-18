@@ -34,6 +34,7 @@ const config: Config = {
         brand: "-0.08em",
       },
       fontSize: {
+        entry: ["4.25rem", { lineHeight: "4.75rem", fontWeight: "650" }],
         caption: ["0.6875rem", { lineHeight: "1rem", fontWeight: "500" }],
         small: ["0.75rem", { lineHeight: "1.125rem", fontWeight: "500" }],
         base: ["0.875rem", { lineHeight: "1.375rem", fontWeight: "400" }],

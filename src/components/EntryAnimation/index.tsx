@@ -2,15 +2,20 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import { useStartupAuth } from "@/api/auth/hooks";
+import { authErrorMessage } from "@/api/auth/auth";
+
 const ENTRY_DURATION_MS = 2_600;
 const CONTENT_REVEAL_OFFSET = 0.65;
 const START_SCALE = 2;
 
 export default function EntryAnimation({ children }: { children: ReactNode }) {
+  const auth = useStartupAuth();
   const [entered, setEntered] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!auth.isSuccess) return;
     const content = contentRef.current;
     if (!content) return;
 
@@ -92,11 +97,23 @@ export default function EntryAnimation({ children }: { children: ReactNode }) {
       content.style.visibility = previousContentVisibility;
       if (logo) logo.style.visibility = previousVisibility;
     };
-  }, []);
+  }, [auth.isSuccess]);
 
   return (
-    <div ref={contentRef} inert={!entered} aria-busy={!entered} className={entered ? undefined : "invisible"}>
-      {children}
-    </div>
+    <>
+      {!auth.isSuccess && (
+        <div className="grid min-h-dvh place-items-center bg-background px-6 text-foreground" aria-busy={auth.isPending}>
+          <div className="grid w-full max-w-sm grid-cols-1 text-center">
+            <div className="text-entry italic tracking-brand">Diony</div>
+            <div className="min-h-20 pt-4">
+              {auth.isError && <p role="alert" className="break-words text-base text-danger">{authErrorMessage(auth.error)}</p>}
+            </div>
+          </div>
+        </div>
+      )}
+      <div ref={contentRef} inert={!entered} aria-busy={!entered} className={entered ? undefined : "invisible"}>
+        {auth.isSuccess ? children : null}
+      </div>
+    </>
   );
 }
