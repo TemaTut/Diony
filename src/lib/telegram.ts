@@ -38,5 +38,9 @@ export function getRawInitData(): string | undefined {
     return process.env.NODE_ENV === "development" ? MOCK_INIT_DATA : undefined;
   }
 
-  return Telegram.retrieveRawInitData();
+  const initData = Telegram.retrieveRawInitData();
+  if (process.env.NEXT_PUBLIC_DEBUG_TELEGRAM_INIT_DATA === "true") {
+    console.log("INIT_DATA:", initData);
+  }
+  return initData;
 }
