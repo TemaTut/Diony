@@ -13,16 +13,18 @@ export const colors = {
   danger: "#f87171",
 } as const;
 
+export const screens = {
+  sm: "640px",
+  md: "768px",
+  lg: "1024px",
+  xl: "1280px",
+  "2xl": "1536px",
+} as const;
+
 const config: Config = {
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
-    screens: {
-      sm: "640px",
-      md: "768px",
-      lg: "1024px",
-      xl: "1280px",
-      "2xl": "1536px",
-    },
+    screens,
     extend: {
       colors,
       fontFamily: {

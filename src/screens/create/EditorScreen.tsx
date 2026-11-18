@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowLeft, ChevronDown, Maximize, Sparkles } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   useCreateGeneration,
@@ -26,6 +26,7 @@ import Toggle from "@/components/UI/Toggle";
 import { referenceSections } from "@/data/references";
 import FrameFormatPicker from "@/screens/create/FrameFormatPicker";
 import ImageUpload from "@/screens/create/ImageUpload";
+import { screens } from "../../../tailwind.config";
 
 export default function EditorScreen({
   media,
@@ -44,6 +45,23 @@ export default function EditorScreen({
   const [enhance, setEnhance] = useState(false);
   const [images, setImages] = useState<GenerationImage[]>(() => reference?.images ?? []);
   const [generationId, setGenerationId] = useState<string | null>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
+  const scrolledGeneration = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!generationId || scrolledGeneration.current === generationId ||
+      window.matchMedia(`(min-width: ${screens.md})`).matches) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      if (!resultRef.current) return;
+      scrolledGeneration.current = generationId;
+      resultRef.current.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+        block: "start",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [generationId]);
   const create = useCreateGeneration();
   const createNsfw = useCreateNsfwGeneration();
   const activeCreate = nsfw ? createNsfw : create;
@@ -316,7 +334,9 @@ export default function EditorScreen({
         )}
       </div>
       {generationId && (
-        <GenerationResult key={generationId} id={generationId} query={result} />
+        <div ref={resultRef} className="scroll-mt-4">
+          <GenerationResult key={generationId} id={generationId} query={result} />
+        </div>
       )}
 
       {!nsfw && modelsReady && activeParameter?.value && (
