@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 
-import { getRawInitData, initializeTelegram } from "@/lib/telegram";
+import { getRawInitData, initializeTelegram, isTelegramEnvironment } from "@/lib/telegram";
 import { removeAccessToken, saveAccessToken } from "@/api/client";
 
 import { authenticateWithTelegram } from "@/api/auth/auth";
@@ -16,6 +16,8 @@ export function useStartupAuth() {
     queryKey: ["startup-auth"],
     queryFn: async ({ signal }) => {
       removeAccessToken();
+      if (!isTelegramEnvironment()) return null;
+
       initializeTelegram();
       const initData = getRawInitData();
       if (!initData) throw new Error("Откройте приложение через Telegram. Данные для входа отсутствуют.");
