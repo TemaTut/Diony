@@ -68,10 +68,10 @@ export default function ImagePreview({ src, alt, onError, onLoad }: ImagePreview
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={src} alt={alt} referrerPolicy="no-referrer" onLoad={onLoad} onError={onError} className="size-full object-contain" />
       </Button>
-      <dialog ref={dialog} aria-label="Просмотр фото. Нажмите на фото, чтобы закрыть" className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none overflow-hidden border-0 bg-black/80 p-4 backdrop:bg-transparent" onCancel={(event) => { event.preventDefault(); void close(); }}>
-        <Button variant="surface" className="size-full cursor-zoom-out rounded-none border-0 bg-transparent p-0 hover:bg-transparent" aria-label="Закрыть фото" onClick={() => void close()}>
+      <dialog ref={dialog} aria-label="Просмотр фото. Нажмите на фото, чтобы закрыть" className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none overflow-hidden border-0 bg-background p-0 backdrop:bg-background" onCancel={(event) => { event.preventDefault(); void close(); }}>
+        <Button variant="surface" className="size-full cursor-zoom-out rounded-none border-0 bg-transparent p-0 hover:bg-transparent focus-visible:outline-none" aria-label="Закрыть фото" onClick={() => void close()}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img ref={image} src={src} alt={alt} referrerPolicy="no-referrer" className="max-h-full max-w-full object-contain" />
+          <img ref={image} src={src} alt={alt} referrerPolicy="no-referrer" className="size-full object-contain" />
         </Button>
       </dialog>
     </>
