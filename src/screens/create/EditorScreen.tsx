@@ -190,9 +190,7 @@ export default function EditorScreen({
         )}
         {!nsfw && (
           <>
-            <label htmlFor="generation-model" className="block text-base text-muted">
-              Нейросеть
-            </label>
+            <p className="text-base text-muted">Нейросеть</p>
             {models.isPending ? (
               <Skeleton
                 className="h-20 w-full"
@@ -218,7 +216,6 @@ export default function EditorScreen({
               </p>
             ) : (
               <Select
-                id="generation-model"
                 label="Нейросеть"
                 value={modelKey}
                 options={modelOptions}
