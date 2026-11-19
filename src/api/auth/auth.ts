@@ -11,7 +11,7 @@ interface TelegramAuthInput {
 }
 
 async function authenticateWithTelegram({ initData, signal }: TelegramAuthInput) {
-  const baseURL = process.env.NEXT_PUBLIC_AUTH_API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL;
+  const baseURL = process.env.NEXT_PUBLIC_AUTH_API_BASE_URL;
   if (!baseURL) throw new Error("Не настроен адрес сервиса авторизации.");
   const url = `${baseURL.replace(/\/+$/, "")}/auth/telegram`;
   const { data } = await axios.post<AuthResponse>(url, { initData }, { signal, timeout: 15_000 });
