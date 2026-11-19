@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useGenerationPhoto, useGenerationResult } from "@/api/generations/hooks";
 import { generationErrorMessage } from "@/api/generations/generations";
 import Button from "@/components/UI/Button";
+import ButtonLink from "@/components/UI/ButtonLink";
 import ImagePreview from "@/components/UI/ImagePreview";
 import Loader from "@/components/UI/Loader";
 import Paper from "@/components/UI/Paper";
@@ -145,6 +146,13 @@ export default function GenerationResult({
                     >
                         Сохранить фото
                     </Button>
+                    <ButtonLink
+                        href={`/api/generations/download?${new URLSearchParams({ url: data.result_url })}`}
+                        download
+                        prefetch={false}
+                    >
+                        Сохранить файл
+                    </ButtonLink>
                     {saveMessage && (
                         <p role="status" className="text-base text-muted">
                             {saveMessage}
