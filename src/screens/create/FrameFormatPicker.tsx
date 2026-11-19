@@ -1,7 +1,8 @@
-import { Scan } from "lucide-react";
+import { Scan, ImageIcon } from "lucide-react";
 
 import Modal from "@/components/UI/Modal";
 import ChoiceCard from "@/components/UI/ChoiceCard";
+import type { FrameFormatOption } from "@/screens/create/frameFormats";
 
 const descriptions: Record<string, string> = {
   auto: "Подберём за вас",
@@ -15,6 +16,10 @@ const descriptions: Record<string, string> = {
   "3:4": "Вертикальный",
   "2:3": "Вертикальный",
   "4:5": "Для ленты",
+  "2:1": "Широкий экран",
+  "6:5": "Горизонтальный",
+  "7:5": "Горизонтальный",
+  "7:2": "Панорама",
 };
 
 export default function FrameFormatPicker({
@@ -25,7 +30,7 @@ export default function FrameFormatPicker({
   onClose,
 }: {
   title: string;
-  options: string[];
+  options: FrameFormatOption[];
   value: string;
   onChange: (value: string) => void;
   onClose: () => void;
@@ -33,22 +38,20 @@ export default function FrameFormatPicker({
   return (
     <Modal title={title} onClose={onClose} className="max-w-xl">
       <div className="grid grid-cols-2 gap-2 sm:gap-3">
-        {options.map((option) => {
-          const dimensions = /^(\d+):(\d+)$/.exec(option);
-          const ratio = dimensions ? Number(dimensions[1]) / Number(dimensions[2]) : null;
+        {options.map(({ value: option, label, format, ratio, resolution }) => {
           return (
             <ChoiceCard
               compact
               key={option}
-              title={option === "auto" ? "Авто" : option}
-              description={descriptions[option]}
+              title={label}
+              description={resolution ?? descriptions[format]}
               selected={value === option}
               onClick={() => {
                 onChange(option);
                 onClose();
               }}
               className="min-h-24"
-              icon={option === "auto" ? <Scan size={26} /> : ratio && Number.isFinite(ratio) && ratio > 0 ? (
+              icon={option === "auto" ? <Scan size={26} /> : ratio ? (
                 <span
                   className="block rounded border-2 border-current"
                   style={{
@@ -56,7 +59,7 @@ export default function FrameFormatPicker({
                     height: ratio >= 1 ? 28 / ratio : 28,
                   }}
                 />
-              ) : undefined}
+              ) : <ImageIcon size={26} />}
             />
           );
         })}

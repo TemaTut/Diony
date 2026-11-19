@@ -25,6 +25,7 @@ import Textarea from "@/components/UI/Textarea";
 import Toggle from "@/components/UI/Toggle";
 import { referenceSections } from "@/data/references";
 import FrameFormatPicker from "@/screens/create/FrameFormatPicker";
+import { mapFrameFormats } from "@/screens/create/frameFormats";
 import ImageUpload from "@/screens/create/ImageUpload";
 import { screens } from "../../../tailwind.config";
 
@@ -85,33 +86,29 @@ export default function EditorScreen({
   const model = models.data?.[modelKey];
   const [selectedFormat, setFormat] = useState<string>();
   const [selectedSize, setSize] = useState<string>();
-  const formats = model?.aspect_ratio ?? [];
-  const sizes = model?.size ?? [];
-  const format =
-    selectedFormat && formats.includes(selectedFormat)
-      ? selectedFormat
-      : formats.includes("1:1")
-       ? "1:1"
-       : formats[0];
-  const size =
-    selectedSize && sizes.includes(selectedSize)
-      ? selectedSize
-      : sizes.includes("auto")
-       ? "auto"
-       : sizes[0];
+  const formats = mapFrameFormats(model?.aspect_ratio ?? []);
+  const sizes = mapFrameFormats(model?.size ?? []);
+  const format = formats.find((option) => option.value === selectedFormat)
+    ?? formats.find((option) => option.value === "1:1")
+    ?? formats[0];
+  const size = sizes.find((option) => option.value === selectedSize)
+    ?? sizes.find((option) => option.value === "auto")
+    ?? sizes[0];
   const modelsReady = models.isSuccess && Boolean(model);
   const parameters = [
     {
       key: "aspectRatio",
       title: "Формат кадра",
-      value: format,
+      value: format?.value,
+      label: format?.label,
       options: formats,
       onChange: setFormat,
     },
     {
       key: "size",
       title: "Размер изображения",
-      value: size,
+      value: size?.value,
+      label: size?.label,
       options: sizes,
       onChange: setSize,
     },
@@ -138,8 +135,8 @@ export default function EditorScreen({
       prompt: prompt.trim(),
       enhance,
       images: [...images],
-      ...(format ? { aspectRatio: format } : {}),
-      ...(size ? { size } : {}),
+      ...(format ? { aspectRatio: format.value } : {}),
+      ...(size ? { size: size.value } : {}),
     };
     const fingerprint = JSON.stringify({
       ...input,
@@ -301,7 +298,7 @@ export default function EditorScreen({
                   {parameter.title}
                 </span>
                 <span className="flex items-center gap-3">
-                  {parameter.value === "auto" ? "Авто" : parameter.value}
+                  {parameter.label}
                   <ChevronDown size={20} />
                 </span>
               </Button>
