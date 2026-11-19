@@ -1,7 +1,8 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import IconButton from "@/components/UI/IconButton";
 import Paper from "@/components/UI/Paper";
@@ -15,7 +16,16 @@ interface ModalProps {
   onClose: () => void;
 }
 
-export default function Modal({ title, children, onClose, className }: ModalProps) {
+const subscribe = () => () => {};
+const getPortalTarget = () => document.body;
+const getServerPortalTarget = () => null;
+
+export default function Modal(props: ModalProps) {
+  const target = useSyncExternalStore(subscribe, getPortalTarget, getServerPortalTarget);
+  return target ? createPortal(<ModalContent {...props} />, target) : null;
+}
+
+function ModalContent({ title, children, onClose, className }: ModalProps) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const previous = document.body.style.overflow;
